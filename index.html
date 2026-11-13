@@ -3,13 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>PraiseList</title>
+<title>Praise List</title>
+<meta name="theme-color" content="#f7fbf1">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
   :root {
     color-scheme: light;
     --bg: #f7fbf1; --surface: #ebefe6; --field: #ffffff; --ink: #191d17; --muted: #43483f;
     --outline: #73796e; --primary: #3b6939; --on-primary: #ffffff; --tonal: #bcf0b4; --on-tonal: #002204;
-    --prev: #dfe4d8; --scrim: rgba(25, 28, 32, .4);
+    --prev: #dfe4d8; --err: #ffdad6; --on-err: #93000a; --sharp: #2e3b2d; --on-sharp: #e6f5e3; --scrim: rgba(25, 28, 32, .4);
     --struk-w: 384px; /* 58mm. Untuk 80mm ganti jadi 576px */
   }
   @media (prefers-color-scheme: dark) {
@@ -17,14 +21,14 @@
       color-scheme: dark;
       --bg: #10140f; --surface: #1c211b; --field: #10140f; --ink: #e0e4db; --muted: #c3c8bb;
       --outline: #8d9387; --primary: #a1d39a; --on-primary: #0a390f; --tonal: #235025; --on-tonal: #bcf0b4;
-      --prev: #272c25; --scrim: rgba(0, 0, 0, .6);
+      --prev: #272c25; --err: #93000a; --on-err: #ffdad6; --sharp: #122a14; --on-sharp: #bcf0b4; --scrim: rgba(0, 0, 0, .6);
     }
   }
   :root[data-theme="dark"] {
     color-scheme: dark;
     --bg: #10140f; --surface: #1c211b; --field: #10140f; --ink: #e0e4db; --muted: #c3c8bb;
     --outline: #8d9387; --primary: #a1d39a; --on-primary: #0a390f; --tonal: #235025; --on-tonal: #bcf0b4;
-    --prev: #272c25; --scrim: rgba(0, 0, 0, .6);
+    --prev: #272c25; --err: #93000a; --on-err: #ffdad6; --sharp: #122a14; --on-sharp: #bcf0b4; --scrim: rgba(0, 0, 0, .6);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: var(--bg); }
@@ -60,7 +64,13 @@
   .head .full { grid-column: 1 / -1; }
 
   table, tbody { display: block; width: 100%; }
-  #rows tr { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  #rows tr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 5px 0; }
+  #rows td.subs, #rows td.addm { flex: 0 0 100%; }
+  #rows td.subs:empty { display: none; }
+  #rows td.addm { padding-left: 40px; }
+  .sub { display: flex; align-items: center; gap: 8px; padding: 3px 0 3px 40px; }
+  .sub .sj { flex: 1; min-width: 0; }
+  .medley { height: 36px; padding: 0 16px; border-radius: 12px; background: var(--field); color: var(--muted); font-weight: 400; font-size: 14px; }
   #rows td { padding: 0; }
   td.no { flex: 0 0 32px; }
   td.no span {
@@ -69,7 +79,7 @@
     font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums;
   }
   #rows td:nth-child(2) { flex: 1; min-width: 0; }
-  td.k { flex: 0 0 68px; }
+  td.k { flex: 0 0 auto; }
   td.x { flex: 0 0 32px; }
 
   button {
@@ -79,15 +89,15 @@
   button.alt { background: transparent; color: var(--primary); }
   button:disabled { opacity: .5; cursor: wait; }
   .kbtn {
-    width: 100%; height: auto; padding: 14px 4px; border-radius: 16px;
+    width: auto; min-width: 68px; height: auto; padding: 14px 8px; border-radius: 16px; white-space: nowrap;
     background: var(--tonal); color: var(--on-tonal); text-align: center;
   }
   .kbtn.empty { background: transparent; color: var(--muted); font-weight: 400; box-shadow: inset 0 0 0 1px var(--outline); }
-  .del { width: 32px; height: 32px; padding: 0; background: transparent; color: var(--muted); font-size: 16px; }
+  .del, .sdel { width: 32px; height: 32px; padding: 0; background: transparent; color: var(--muted); font-size: 16px; }
   svg { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .iconbtn { width: 40px; height: 40px; padding: 0; border-radius: 50%; background: var(--tonal); color: var(--on-tonal); display: grid; place-items: center; }
   .save { width: 100%; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .del svg { width: 20px; height: 20px; }
+  .del svg, .sdel svg { width: 20px; height: 20px; }
 
   .fab {
     position: fixed; right: max(16px, calc(50% - 224px)); bottom: calc(88px + env(safe-area-inset-bottom)); z-index: 6;
@@ -118,6 +128,8 @@
   #picker .grid.three { grid-template-columns: repeat(3, 1fr); }
   #picker .grid button { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   #picker .grid button.tm { font-size: 13px; }
+  #picker .grid button.blk { background: var(--sharp); color: var(--on-sharp); }
+  #picker .grid button.danger { background: var(--err); color: var(--on-err); }
   #picker .grid button { height: auto; padding: 18px 0; font-size: 18px; background: var(--tonal); color: var(--on-tonal); border-radius: 20px; }
   #picker .bottom2 { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
 
@@ -136,8 +148,11 @@
   #struk .li { display: flex; gap: 6px; padding: 2px 0; }
   #struk .li .n { flex: 0 0 24px; }
   #struk .li .j { flex: 1; word-break: break-word; }
-  #struk .li .k { flex: 0 0 56px; font-weight: 700; text-align: center; }
+  #struk .li .k { flex: 0 0 100px; font-weight: 700; text-align: center; }
   #struk .li.h { font-weight: 700; }
+  #struk .li.s { padding-top: 0; }
+  #struk .li.m .n, #struk .li.m .j, #struk .li.s .j { font-weight: 700; }
+  #struk .li.s i { font-weight: 400; }
   #struk .foot { text-align: center; margin-top: 4px; }
 
   /* Halaman struk disembunyikan di luar layar (bukan display:none) supaya html2canvas tetap bisa menangkapnya */
@@ -146,7 +161,7 @@
 </head>
 <body>
 <header class="appbar">
-  <h1>PraiseList</h1>
+  <h1>Praise List</h1>
   <button id="btnTema" class="iconbtn" aria-label="Tema"></button>
 </header>
 
@@ -195,7 +210,7 @@
     <div class="ttl" id="pkTtl"></div>
     <div class="grid" id="pkGrid"></div>
     <div class="bottom2">
-      <button type="button" class="alt" id="pkClear">Kosongkan</button>
+      <button type="button" class="alt" id="pkClear">Selesai</button>
       <button type="button" class="alt" id="pkCancel">Batal</button>
     </div>
   </div>
@@ -213,13 +228,26 @@
       '<td class="no"><span></span></td>' +
       '<td><input class="judul" type="text" placeholder="Judul lagu" autocomplete="off"></td>' +
       '<td class="k"><button type="button" class="kbtn empty">Kunci</button></td>' +
-      '<td class="x"><button type="button" class="del" aria-label="Hapus">'+ICON.x+'</button></td>';
+      '<td class="x"><button type="button" class="del" aria-label="Hapus">'+ICON.x+'</button></td>' +
+      '<td class="subs"></td>' +
+      '<td class="addm"><button type="button" class="medley">＋ Medley</button></td>';
     rows.appendChild(tr);
     return tr;
   }
 
+  function addSub(tr) {
+    const sb = document.createElement('div');
+    sb.className = 'sub';
+    sb.innerHTML =
+      '<input class="sj" type="text" placeholder="Judul lagu medley" autocomplete="off">' +
+      '<button type="button" class="kbtn empty">Kunci</button>' +
+      '<button type="button" class="sdel" aria-label="Hapus">' + ICON.x + '</button>';
+    tr.querySelector('.subs').appendChild(sb);
+    return sb;
+  }
+
   const val = (tr, c) => c === 'kunci' ? (tr.dataset.kunci || '') : tr.querySelector('.' + c).value.trim();
-  const isEmpty = tr => !val(tr, 'judul') && !val(tr, 'kunci');
+  const isEmpty = tr => !val(tr, 'judul') && !val(tr, 'kunci') && !tr.querySelector('.sub');
 
   function renumber() {
     [...rows.children].forEach((tr, i) => { tr.querySelector('.no span').textContent = i + 1; });
@@ -234,6 +262,19 @@
 
 
   rows.addEventListener('click', e => {
+    const m = e.target.closest('.medley');
+    if (m) {
+      const sb = addSub(m.closest('tr'));
+      sync();
+      sb.querySelector('.sj').focus();
+      return;
+    }
+    const x = e.target.closest('.sdel');
+    if (x) {
+      x.closest('.sub').remove();
+      sync();
+      return;
+    }
     const d = e.target.closest('.del');
     if (!d) return;
     const tr = d.closest('tr');
@@ -266,22 +307,35 @@
 
   const picker = $('picker');
   let pickTr = null;
-  let pickMode = 'maj';
+  let pickNote = '';
+  let pickKeys = [];
 
   function stepMode() {
-    $('pkTtl').textContent = 'Pilih jenis kunci';
-    $('pkClear').style.display = '';
+    $('pkTtl').textContent = (pickKeys.length ? 'Modulasi ke ' : 'Kunci ') + pickNote + '…';
+    $('pkClear').style.display = 'none';
     $('pkGrid').className = 'grid two';
     $('pkGrid').innerHTML =
       '<button type="button" data-mode="maj">Major</button>' +
       '<button type="button" data-mode="min">Minor</button>';
   }
 
+  function stepMore() {
+    $('pkTtl').textContent = pickKeys.join('→');
+    $('pkClear').style.display = '';
+    $('pkClear').textContent = 'Selesai';
+    $('pkGrid').className = 'grid three';
+    $('pkGrid').innerHTML =
+      '<button type="button" class="tm" data-act="more">＋ Modulasi</button>' +
+      '<button type="button" class="tm" data-act="reset">Ganti</button>' +
+      '<button type="button" class="tm danger" data-act="clear">Kosongkan</button>';
+  }
+
   function stepNote() {
-    $('pkTtl').textContent = pickMode === 'min' ? 'Nada dasar (Minor)' : 'Nada dasar (Major)';
+    $('pkTtl').textContent = pickKeys.length ? 'Modulasi ke…' : 'Pilih nada dasar';
+    $('pkClear').style.display = 'none';
     $('pkGrid').className = 'grid';
-    $('pkGrid').innerHTML = ['A', 'Bb', 'B', 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab'].map(n =>
-      '<button type="button" data-note="' + n + '">' + n + '</button>'
+    $('pkGrid').innerHTML = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].map(n =>
+      '<button type="button"' + (n.length > 1 ? ' class="blk"' : '') + ' data-note="' + n + '">' + n + '</button>'
     ).join('');
   }
 
@@ -301,8 +355,9 @@
   rows.addEventListener('click', e => {
     const b = e.target.closest('.kbtn');
     if (!b) return;
-    pickTr = b.closest('tr');
-    stepMode();
+    pickTr = b.closest('.sub') || b.closest('tr');
+    pickKeys = (pickTr.dataset.kunci || '').split('→').filter(Boolean);
+    if (pickKeys.length) stepMore(); else stepNote();
     picker.classList.add('open');
   });
 
@@ -314,12 +369,19 @@
       closePicker();
       return;
     }
-    if (b.dataset.mode) {
-      pickMode = b.dataset.mode;
+    if (b.dataset.act) {
+      if (b.dataset.act === 'clear') { if (pickTr) setKunci(pickTr, ''); closePicker(); return; }
+      if (b.dataset.act === 'reset') pickKeys = [];
       stepNote();
-    } else if (b.dataset.note && pickTr) {
-      setKunci(pickTr, b.dataset.note + (pickMode === 'min' ? 'm' : ''));
-      closePicker();
+      return;
+    }
+    if (b.dataset.note) {
+      pickNote = b.dataset.note;
+      stepMode();
+    } else if (b.dataset.mode && pickTr) {
+      pickKeys.push(pickNote + (b.dataset.mode === 'min' ? 'm' : ''));
+      setKunci(pickTr, pickKeys.join('→'));
+      stepMore();
     }
   });
 
@@ -341,7 +403,7 @@
     picker.classList.add('open');
   };
 
-  $('pkClear').onclick = () => { if (pickTr) setKunci(pickTr, ''); closePicker(); };
+  $('pkClear').onclick = closePicker;
   $('pkCancel').onclick = closePicker;
   picker.addEventListener('click', e => { if (e.target === picker) closePicker(); });
 
@@ -379,8 +441,14 @@
 
   function render() {
     const list = [...rows.children]
-      .map((tr, i) => ({ n: i + 1, j: val(tr, 'judul'), k: val(tr, 'kunci') }))
-      .filter(r => r.j || r.k);
+      .map((tr, i) => ({
+        n: i + 1, j: val(tr, 'judul'), k: val(tr, 'kunci'),
+        subs: [...tr.querySelectorAll('.sub')]
+          .map(sb => ({ j: sb.querySelector('.sj').value.trim(), k: sb.dataset.kunci || '' }))
+          .filter(x => x.j || x.k)
+      }))
+      .filter(r => r.j || r.k || r.subs.length);
+    const fk = k => esc(k.split('→').join(' -> '));
 
     $('struk').innerHTML =
       '<div class="title">DAFTAR PUJIAN</div>' +
@@ -392,8 +460,12 @@
       '<div class="li h"><span class="n">No</span><span class="j">Judul (' + list.length + ' lagu)</span><span class="k">Kunci</span></div>' +
       '<div class="sep"></div>' +
       list.map(r =>
-        '<div class="li"><span class="n">' + r.n + '.</span><span class="j">' + esc(r.j) +
-        '</span><span class="k">' + esc(r.k) + '</span></div>'
+        '<div class="li m"><span class="n">' + r.n + '.</span><span class="j">' + esc(r.j) +
+        '</span><span class="k">' + fk(r.k) + '</span></div>' +
+        r.subs.map(x =>
+          '<div class="li s"><span class="n"></span><span class="j"><i>(medl.)</i> ' + esc(x.j) +
+          '</span><span class="k">' + fk(x.k) + '</span></div>'
+        ).join('')
       ).join('') +
       '<div class="sep"></div>' +
       '<div class="foot">Tuhan Yesus Memberkati 😇🙏</div>';
@@ -427,6 +499,8 @@
     const c = await snap();
     save(c.toDataURL('image/jpeg', 0.95), fileBase() + '.jpg');
   });
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
   let savedTheme = 'system';
   try { savedTheme = localStorage.getItem('wl-theme') || 'system'; } catch (e) {}
